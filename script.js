@@ -1,233 +1,218 @@
-const startButton = document.getElementById('startButton');
-const callContainer = document.getElementById('call-container');
+const startButton = document.getElementById('start-btn');
+const controls = document.getElementById('controls');
+const container = document.getElementById('container');
 const transcriptLog = document.getElementById('transcript-log');
-const alertsLog = document.getElementById('alerts-log');
-
-const pressureRegex = /(act now|limited time|only one left|don't wait|offer expires|final notice|your account is suspended|immediate payment|must verify|bank details)/i;
-let detectedPhrases = new Set();
+const alertLog = document.getElementById('alert-log');
 
 let isCallActive = false;
-let recognition;
-let interim_transcript = '';
+let recognition = null;
+let fullTranscript = '';
+let alertCount = 0;
 
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-function setupSpeechRecognition() {
-    if (!SpeechRecognition) {
-        transcriptLog.innerHTML = '<p class="log-entry system error">Error: Speech Recognition is not supported by this browser. Please use Chrome, Edge, or Safari.</p>';
-        startButton.disabled = true;
-        startButton.textContent = 'Speech Recognition Not Supported';
-        return false;
-    }
-    
-    recognition = new SpeechRecognition();
-    recognition.interimResults = true;
-    recognition.continuous = true;
-
-    recognition.onresult = (event) => {
-        let final_transcript = '';
-        interim_transcript = '';
-
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-            const transcript_part = event.results[i][0].transcript;
-            
-            if (event.results[i].isFinal) {
-                final_transcript += transcript_part.trim() + ' ';
-            } else {
-                interim_transcript += transcript_part;
-            }
-        }
-        
-        if (final_transcript) {
-            addTranscript(final_transcript);
-        }
-        
-        updateInterimTranscript(interim_transcript);
-    };
-
-    recognition.onend = () => {
-        if (isCallActive) {
-            try {
-                recognition.start();
-            } catch(e) {
-                console.error("Error restarting recognition:", e);
-            }
-        }
-    };
-
-    recognition.onerror = (event) => {
-        console.error('Speech recognition error:', event.error);
-        let errorMessage;
-
-        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-            errorMessage = 'Error: Microphone permission was denied. Please allow access and try again.';
-        } else if (event.error === 'network') {
-            errorMessage = 'Error: A network error occurred. Please check your connection.';
-        } else if (event.error === 'audio-capture') {
-            errorMessage = 'Error: No audio was detected. Please check your microphone.';
-        } else if (event.error === 'aborted') {
-            errorMessage = 'Speech recognition was aborted.';
-        } else if (event.error === 'no-speech') {
-            console.warn('Speech recognition: no-speech error.');
-            return;
-        } else {
-            errorMessage = `An unexpected error occurred: "${event.error}". Please try again.`;
-        }
-        
-        transcriptLog.innerHTML = `<p class="log-entry system error">${errorMessage}</p>`;
-    };
-    
-    return true;
-}
+const pressureRegex = /(act now|limited time|only one left|don't wait|offer expires|final notice|your account is suspended|immediate payment|must verify|bank details|verify your identity)/i;
 
 function toggleCall() {
-    isCallActive = !isCallActive;
-
-    if (isCallActive) {
-        startButton.textContent = 'Stop Call Analysis';
-        callContainer.style.display = 'grid';
-
-        transcriptLog.innerHTML = '<p class="log-entry system">Connecting...</p>';
-        alertsLog.innerHTML = '<p class="log-entry system">Alerts will appear here.</p>';
-
-        detectedPhrases.clear();
-        
-        if (!recognition) {
-            if (!setupSpeechRecognition()) {
-                isCallActive = false;
-                startButton.textContent = 'Start Call Analysis';
-                callContainer.style.display = 'none';
-                return;
-            }
-        }
-        
-        startCall();
-
-    } else {
-        startButton.textContent = 'Start Call Analysis';
-        callContainer.style.display = 'none';
-
-        stopCall();
-    }
+  if (isCallActive) {
+    stopCall();
+  } else {
+    startCall();
+  }
 }
 
-async function startCall() {
-    try {
-        
-        await navigator.mediaDevices.getUserMedia({ audio: true });
-        
-        transcriptLog.innerHTML = '<p class="log-entry system">Connected. Start speaking...</p>';
-        recognition.start();
-
-    } catch (error) {
-        console.error('Error accessing microphone:', error);
-        transcriptLog.innerHTML = '<p class="log-entry system error">Error: Could not access microphone. Please grant permission and try again.</p>';
+function startCall() {
+  try {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      addSystemEntry("Error: Speech recognition not supported by this browser.");
+      return;
     }
+
+    recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+
+    recognition.onresult = handleRecognitionResult;
+    recognition.onerror = handleRecognitionError;
+    recognition.onend = handleRecognitionEnd;
+
+    isCallActive = true;
+    fullTranscript = '';
+    alertCount = 0;
+    transcriptLog.innerHTML = '';
+    alertLog.innerHTML = '';
+    
+    container.classList.add('visible');
+    startButton.textContent = 'Stop Call Analysis';
+    startButton.classList.add('stop');
+    
+    addSystemEntry("Connected. Start speaking...");
+    recognition.start();
+
+  } catch (error) {
+    console.error("Error starting call:", error);
+    addSystemEntry("Error: Could not start microphone.");
+  }
 }
 
 function stopCall() {
-    if (recognition) {
-        recognition.stop();
-    }
-    
-    if (transcriptLog.innerHTML.includes('...')) {
-        transcriptLog.innerHTML = '<p class="log-entry system">Call ended.</p>';
+  if (recognition) {
+    recognition.stop();
+  }
+  isCallActive = false;
+  container.classList.remove('visible');
+  startButton.textContent = 'Start Call Analysis';
+  startButton.classList.remove('stop');
+}
+
+function handleRecognitionResult(event) {
+  let interimTranscript = '';
+  let finalTranscript = '';
+
+  for (let i = event.resultIndex; i < event.results.length; ++i) {
+    if (event.results[i].isFinal) {
+      finalTranscript += event.results[i][0].transcript;
     } else {
-        transcriptLog.innerHTML += '<p class="log-entry system">Call ended.</p>';
+      interimTranscript += event.results[i][0].transcript;
     }
+  }
+
+  if (finalTranscript) {
+    addTranscript(finalTranscript);
+    fullTranscript += finalTranscript + ' ';
+    checkTranscriptForPressure(finalTranscript);
+  }
+  if (interimTranscript) {
+    updateInterimTranscript(interimTranscript);
+  }
+}
+
+function handleRecognitionError(event) {
+  if (event.error === 'no-speech' || event.error === 'audio-capture') {
+    addSystemEntry("Did not catch that. Still listening...");
+  } else {
+    console.error("Speech recognition error:", event.error);
+    addSystemEntry(`An unexpected error occurred: '${event.error}'`);
+  }
+}
+
+function handleRecognitionEnd() {
+  if (isCallActive) {
+    recognition.start();
+  }
+}
+
+function addSystemEntry(text) {
+  const existingSystemEntry = transcriptLog.querySelector('.system');
+  if (existingSystemEntry && !existingSystemEntry.classList.contains('interim')) {
+    existingSystemEntry.remove();
+  }
+  const entry = document.createElement('p');
+  entry.className = 'log-entry system';
+  entry.textContent = text;
+  transcriptLog.appendChild(entry);
+  transcriptLog.scrollTop = transcriptLog.scrollHeight;
 }
 
 function addTranscript(text) {
-    const firstEntry = transcriptLog.querySelector('.system');
-    if (firstEntry) {
-        transcriptLog.innerHTML = '';
-    }
-
-    const lastInterim = transcriptLog.querySelector('.interim');
-    if (lastInterim) {
-        lastInterim.remove();
-    }
-
-    const p = document.createElement('p');
-    p.className = 'log-entry transcript';
-    p.textContent = text;
-    
-    transcriptLog.appendChild(p);
-    transcriptLog.scrollTop = transcriptLog.scrollHeight;
-
-    checkTranscriptForPressure(text);
+  const existingInterim = transcriptLog.querySelector('.interim');
+  if (existingInterim) {
+    existingInterim.remove();
+  }
+  const entry = document.createElement('p');
+  entry.className = 'log-entry transcript';
+  entry.textContent = text.trim();
+  transcriptLog.appendChild(entry);
+  transcriptLog.scrollTop = transcriptLog.scrollHeight;
 }
 
 function updateInterimTranscript(text) {
-    if (!text) {
-        return;
-    }
-    
-    const firstEntry = transcriptLog.querySelector('.system');
-    if (firstEntry) {
-        transcriptLog.innerHTML = '';
-    }
-    
-    let interimEl = transcriptLog.querySelector('.interim');
-    
-    if (interimEl) {
-        interimEl.textContent = text;
-    } else {
-        interimEl = document.createElement('p');
-        interimEl.className = 'log-entry system interim';
-        interimEl.textContent = text;
-        transcriptLog.appendChild(interimEl);
-    }
-    
-    transcriptLog.scrollTop = transcriptLog.scrollHeight;
+  let interimEntry = transcriptLog.querySelector('.interim');
+  if (!interimEntry) {
+    interimEntry = document.createElement('p');
+    interimEntry.className = 'log-entry system interim';
+    transcriptLog.appendChild(interimEntry);
+  }
+  interimEntry.textContent = text;
+  transcriptLog.scrollTop = transcriptLog.scrollHeight;
 }
 
 function checkTranscriptForPressure(text) {
-    const match = text.match(pressureRegex);
-    if (match) {
-        const matchedPhrase = match[0].toLowerCase();
-        
-        if (!detectedPhrases.has(matchedPhrase)) {
-            detectedPhrases.add(matchedPhrase);
-            addAlert('yellow', 'Pressure Tactic Detected', `The phrase "${matchedPhrase}" was detected. Analyzing context...`);
-        }
-    }
+  if (pressureRegex.test(text)) {
+    const alertId = `alert-${alertCount++}`;
+    addAlert(alertId, text);
+    analyzeWithAI(fullTranscript, alertId);
+  }
 }
 
-function addAlert(type, title, message) {
-    const firstEntry = alertsLog.querySelector('.system');
-    if (firstEntry) {
-        alertsLog.innerHTML = '';
+function addAlert(id, text) {
+  const alertCard = document.createElement('div');
+  alertCard.id = id;
+  alertCard.className = 'alert-card yellow';
+  
+  alertCard.innerHTML = `
+    <svg class="alert-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.374c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+    </svg>
+    <div class="alert-content">
+      <p><strong>Caution: High-Pressure Language Detected</strong></p>
+      <p>Detected phrase: "${text}"</p>
+      <p><i>Analyzing context...</i></p>
+    </div>
+  `;
+  
+  alertLog.prepend(alertCard);
+}
+
+async function analyzeWithAI(transcript, alertId) {
+  try {
+    const response = await fetch('/api/analyzePressure', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ transcript: transcript }),
+    });
+
+    if (!response.ok) {
+      throw new Error('AI analysis failed');
     }
 
-    const alertCard = document.createElement('div');
-    alertCard.className = `alert-card ${type}`;
+    const data = await response.json();
+    updateAlert(alertId, data);
 
-    let iconSvg = '';
-    if (type === 'yellow') {
-        iconSvg = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="alert-icon ${type}">
-                <path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
-                <line x1="12" y1="9" x2="12" y2="13"></line>
-                <line x1="12" y1="17" x2="12.01" y2="17"></line>
-            </svg>
-        `;
-    }
+  } catch (error) {
+    console.error("Error calling AI:", error);
+    updateAlert(alertId, { error: "Could not analyze context." });
+  }
+}
+
+function updateAlert(alertId, aiResponse) {
+  const alertCard = document.getElementById(alertId);
+  if (!alertCard) return;
+
+  if (aiResponse.is_manipulative) {
+    alertCard.classList.remove('yellow');
+    alertCard.classList.add('red');
     
     alertCard.innerHTML = `
-        ${iconSvg}
-        <div class="alert-content">
-            <p class="alert-title">${title}</p>
-            <p class="alert-message">${message}</p>
-        </div>
+      <svg class="alert-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.374c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+      </svg>
+      <div class="alert-content">
+        <p><strong>Alert: Manipulative Tactic Confirmed</strong></p>
+        <p>${aiResponse.explanation}</p>
+        <p><strong>Suggested:</strong> "${aiResponse.suggested_response}"</p>
+      </div>
     `;
-    
-    alertsLog.appendChild(alertCard);
-    alertsLog.scrollTop = alertsLog.scrollHeight;
+  } else if (aiResponse.is_manipulative === false) {
+    alertCard.remove();
+  } else if (aiResponse.error) {
+    const contextElement = alertCard.querySelector('i');
+    if(contextElement) {
+      contextElement.textContent = `AI Error: ${aiResponse.error}`;
+    }
+  }
 }
 
-if (startButton) {
-    startButton.addEventListener('click', toggleCall);
-} else {
-    console.error('Fatal Error: startButton not found.');
-}
+startButton.addEventListener('click', toggleCall);
