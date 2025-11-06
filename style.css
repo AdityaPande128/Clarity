@@ -1,0 +1,134 @@
+:root {
+    --font-sans: 'Inter', sans-serif;
+    --bg-dark: #111827;
+    --bg-light: #1F2937;
+    --text-primary: #F3F4F6;
+    --text-secondary: #9CA3AF;
+    --color-blue: #3B82F6;
+    --color-blue-dark: #2563EB;
+
+    --color-yellow: #FACC15;
+    --color-red: #EF4444;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-sans);
+    background-color: var(--bg-dark);
+    color: var(--text-primary);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--bg-light);
+}
+
+.shield-icon {
+    color: var(--color-blue);
+    margin-right: 0.75rem;
+}
+
+.header h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.main-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    gap: 2rem;
+}
+
+.start-button {
+    font-family: var(--font-sans);
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: white;
+    background-color: var(--color-blue);
+    border: none;
+    border-radius: 0.5rem;
+    padding: 1rem 2rem;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 4px 14px 0 rgba(0, 0, 0, 0.1), 0 3px 6px 0 rgba(59, 130, 246, 0.3);
+}
+
+.start-button:hover {
+    background-color: var(--color-blue-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px 0 rgba(0, 0, 0, 0.1), 0 4px 8px 0 rgba(59, 130, 246, 0.4);
+}
+
+.call-container {
+    display: none;
+    width: 100%;
+    max-width: 1200px;
+    height: 60vh;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+}
+
+.log-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.log-container h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.log-box {
+    background-color: var(--bg-light);
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    height: 100%;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.log-entry {
+    line-height: 1.6;
+}
+
+.log-entry.system {
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.alert-card {
+    border-radius: 0.5rem;
+    padding: 1rem;
+    border-left-width: 4px;
+}
+
+.alert-card-yellow {
+    background-color: rgba(250, 204, 21, 0.1);
+    border-color: var(--color-yellow);
+    color: var(--color-yellow);
+}
+
+.alert-card-red {
+    background-color: rgba(239, 68, 68, 0.1);
+    border-color: var(--color-red);
+    color: var(--color-red);
+}

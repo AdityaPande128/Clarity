@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pressure Shield</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="style.css">
+
+    <script src="script.js" defer></script>
+</head>
+
+<body>
+    <header class="header">
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shield-icon">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+        </svg>
+        <h1>Pressure Shield</h1>
+    </header>
+
+    <main class="main-content">
+        <button id="startButton" class="start-button">
+            Start Call Analysis
+        </button>
+
+        <div id="call-container" class="call-container">
+
+            <div class="log-container" id="transcript-container">
+                <h2>Live Transcript</h2>
+                <div class="log-box" id="transcript-log">
+                    <p class="log-entry system">Waiting for call to start...</p>
+                </div>
+            </div>
+
+            <div class="log-container" id="alerts-container">
+                <h2>Pressure Shield Alerts</h2>
+                <div class="log-box" id="alerts-log">
+                    <p class="log-entry system">Alerts will appear here.</p>
+                </div>
+            </div>
+
+        </div>
+    </main>
+</body>
+
+</html>
