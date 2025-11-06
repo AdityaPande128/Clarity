@@ -14,7 +14,9 @@ document.addEventListener('DOMContentLoaded', () => {
   let isCallActive = false;
   let recognition = null;
   let fullTranscript = '';
-  let alertCount = 0;
+  
+  // NEW: A "memory" to prevent duplicate alerts
+  let shownAlerts = new Set();
 
   function toggleCall() {
     if (isCallActive) {
@@ -43,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       isCallActive = true;
       fullTranscript = '';
-      alertCount = 0;
+      shownAlerts.clear(); // Clear the memory for the new call
       transcriptLog.innerHTML = '';
       alertLog.innerHTML = '';
       
@@ -85,10 +87,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (finalTranscript) {
       addTranscript(finalTranscript);
       fullTranscript += finalTranscript + ' ';
-      
-      // THIS IS THE BIG CHANGE:
-      // We no longer check a regex. We send *every* final transcript
-      // to the AI for analysis.
       analyzeWithAI(fullTranscript);
     }
     if (interimTranscript) {
@@ -146,13 +144,12 @@ document.addEventListener('DOMContentLoaded', () => {
     transcriptLog.scrollTop = transcriptLog.scrollHeight;
   }
 
+  // UPDATED: This function now handles an array of alerts
   async function analyzeWithAI(transcript) {
     try {
       const response = await fetch('/api/analyzePressure', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ transcript: transcript }),
       });
 
@@ -162,32 +159,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const data = await response.json();
       
-      // If the AI confirms manipulation, add a new alert.
-      // If not, it does nothing.
-      if (data.is_manipulative) {
-        addAlert(data);
+      if (data.alerts && data.alerts.length > 0) {
+        for (const alert of data.alerts) {
+          // Create a unique key for this alert
+          const alertKey = `${alert.type}-${alert.title}`;
+          
+          // Check if we've *already* shown this alert
+          if (!shownAlerts.has(alertKey)) {
+            addAlert(alert);
+            shownAlerts.add(alertKey); // Add to memory
+          }
+        }
       }
 
     } catch (error) {
       console.error("Error calling AI:", error);
-      // We could add a system error here if needed
     }
   }
   
-  function addAlert(aiResponse) {
-    const alertId = `alert-${alertCount++}`;
+  // UPDATED: This function is now more generic
+  function addAlert(alert) {
+    const alertId = `alert-${shownAlerts.size}`;
     const alertCard = document.createElement('div');
     alertCard.id = alertId;
-    alertCard.className = 'alert-card red';
+    
+    // Use the alert.type to set the class (e.g., "pressure", "jargon")
+    alertCard.className = `alert-card ${alert.type.toLowerCase()}`;
     
     alertCard.innerHTML = `
       <svg class="alert-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.374c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
       </svg>
       <div class="alert-content">
-        <p><strong>Alert: Manipulative Tactic Detected</strong></p>
-        <p>${aiResponse.explanation}</p>
-        <p><strong>Suggested:</strong> "${aiResponse.suggested_response}"</p>
+        <p><strong>${alert.title}</strong></p>
+        <p>${alert.message}</p>
+        <p><i><strong>Suggested:</strong> "${alert.suggestion}"</i></p>
       </div>
     `;
     

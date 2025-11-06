@@ -8,6 +8,7 @@
     --text-dark: #495670;
     --border-color: #233554;
     --red-alert: #FF4D4D;
+    --yellow-alert: #FFD700;
 }
 
 * {
@@ -157,12 +158,24 @@ h2 {
     transition: all 0.3s ease;
 }
 
-.alert-card.red {
+/* NEW: Generic class for RED alerts */
+.alert-card.pressure {
     border-left: 4px solid var(--red-alert);
 }
 
-.alert-card.red .alert-icon {
+.alert-card.pressure .alert-icon {
     color: var(--red-alert);
+}
+
+/* NEW: Generic class for YELLOW alerts */
+.alert-card.jargon,
+.alert-card.multi_question {
+    border-left: 4px solid var(--yellow-alert);
+}
+
+.alert-card.jargon .alert-icon,
+.alert-card.multi_question .alert-icon {
+    color: var(--yellow-alert);
 }
 
 .alert-icon {
@@ -183,4 +196,8 @@ h2 {
     display: block;
     font-weight: 600;
     margin-bottom: 4px;
+}
+
+.alert-content p i {
+    color: var(--text-dark);
 }

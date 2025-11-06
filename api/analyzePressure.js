@@ -4,13 +4,11 @@ export default async function handler(req, res) {
   }
 
   const { transcript } = req.body;
-
   if (!transcript) {
     return res.status(400).json({ error: 'Transcript is required' });
   }
 
   const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-
   if (!GEMINI_API_KEY) {
     return res.status(500).json({ error: 'Server configuration error: GEMINI_API_KEY not set' });
   }
@@ -18,37 +16,47 @@ export default async function handler(req, res) {
   const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${GEMINI_API_KEY}`;
 
   const systemPrompt = `
-You are an expert AI assistant specialized in detecting verbal coercion, manipulation, and high-pressure tactics in real-time. You are a 'Pressure Shield' for a vulnerable user.
+You are an expert AI assistant specialized in real-time call analysis for cognitive accessibility. You are a 'Pressure Shield' for a vulnerable user.
 
-Your job is to analyze the provided call transcript and intelligently determine if the speaker is using any form of psychological pressure or manipulative language to coerce the user. This includes, but is not limited to:
-- Creating false urgency ("you must act now," "this offer expires in one minute")
-- Threatening consequences ("your account will be locked," "a warrant will be issued")
-- Using emotional manipulation ("if you really cared, you would...")
-- Claiming authority ("I am a federal agent," "I am from the bank")
-- Rushing the user or not letting them speak.
+Your job is to analyze the provided call transcript and identify ANY instances of THREE specific categories:
+1.  **PRESSURE/COERCION:** Any language that creates urgency, fear, or manipulation (e.g., "act now," "your account will be locked").
+2.  **TECHNICAL JARGON:** Any complex or technical term the average person might not know (e.g., "malware," "router," "SSN," "premium").
+3.  **MULTI-PART QUESTIONS:** Any single sentence that asks the user for two or more distinct pieces of information (e.g., "What is your name and date of birth?").
 
 You MUST respond with a JSON object that matches this exact schema:
 {
-  "is_manipulative": boolean,
-  "explanation": string,
-  "suggested_response": string
+  "alerts": [
+    {
+      "type": "PRESSURE" | "JARGON" | "MULTI_QUESTION",
+      "title": "Alert Title",
+      "message": "A simple one-sentence explanation.",
+      "suggestion": "A short, actionable tip for the user."
+    }
+  ]
 }
 
-- If you detect ANY form of coercion or manipulation, set "is_manipulative" to true and fill in the "explanation" and "suggested_response" fields.
-- If the language is harmless (e.g., standard conversation, polite requests), set "is_manipulative" to false and the other fields to empty strings "".
+- For **PRESSURE**, the title should be "Pressure Tactic Detected".
+- For **JARGON**, the title should be "Jargon: '[The Term]'".
+- For **MULTI_QUESTION**, the title should be "Multi-Part Question".
 
-Example of a manipulative response:
-{
-  "is_manipulative": true,
-  "explanation": "The speaker is creating a false sense of urgency and threatening a negative consequence.",
-  "suggested_response": "I will not be rushed. I will hang up and verify this myself."
-}
+If you find *no* issues, return an empty array: { "alerts": [] }
 
-Example of a harmless response:
+**Example Response (if you find multiple issues):**
 {
-  "is_manipulative": false,
-  "explanation": "",
-  "suggested_response": ""
+  "alerts": [
+    {
+      "type": "PRESSURE",
+      "title": "Pressure Tactic Detected",
+      "message": "The speaker is using urgency and threatening a negative consequence.",
+      "suggestion": "I will not be rushed. I will hang up and verify this myself."
+    },
+    {
+      "type": "JARGON",
+      "title": "Jargon: 'Router'",
+      "message": "A 'router' is the small box that provides Wi-Fi to your home.",
+      "suggestion": "You can ask: 'Can you please explain what a router is?'"
+    }
+  ]
 }
   `;
 
@@ -67,11 +75,21 @@ Example of a harmless response:
       responseSchema: {
         type: 'OBJECT',
         properties: {
-          is_manipulative: { type: 'BOOLEAN' },
-          explanation: { type: 'STRING' },
-          suggested_response: { type: 'STRING' },
+          alerts: {
+            type: 'ARRAY',
+            items: {
+              type: 'OBJECT',
+              properties: {
+                type: { type: 'STRING' },
+                title: { type: 'STRING' },
+                message: { type: 'STRING' },
+                suggestion: { type: 'STRING' },
+              },
+              required: ['type', 'title', 'message', 'suggestion'],
+            },
+          },
         },
-        required: ['is_manipulative', 'explanation', 'suggested_response'],
+        required: ['alerts'],
       },
       temperature: 0.1,
     },
@@ -100,7 +118,6 @@ Example of a harmless response:
     }
 
     const aiResponse = JSON.parse(data.candidates[0].content.parts[0].text);
-
     return res.status(200).json(aiResponse);
 
   } catch (error) {
