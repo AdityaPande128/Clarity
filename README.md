@@ -2,8 +2,6 @@
 
 **Clarity** is a web-based accessibility tool designed to help users navigate complex or high-pressure phone conversations. It listens to a call in real-time and provides on-screen "Clarity Cards" to help users understand and respond to coercive language, technical jargon, and confusing questions.
 
-This project was built in 24 hours for a technical interview with **Hiya**, demonstrating a rapid, product-focused development cycle using modern AI.
-
 ## The Problem
 
 Phone calls can be a source of anxiety and a vector for fraud, especially for vulnerable populations. A user might be:
