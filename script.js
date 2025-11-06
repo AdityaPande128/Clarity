@@ -1,8 +1,18 @@
+// This function will run *after* the HTML page is fully loaded
 document.addEventListener('DOMContentLoaded', () => {
+
+  // We define all our elements *inside* the listener
   const mainContent = document.getElementById('main-content');
   const startButton = document.getElementById('start-btn');
   const transcriptLog = document.getElementById('transcript-log');
   const alertLog = document.getElementById('alert-log');
+
+  // This is our new, robust check.
+  if (!mainContent || !startButton || !transcriptLog || !alertLog) {
+    console.error("Fatal Error: HTML elements are missing.");
+    document.body.innerHTML = "<h1>Fatal Error: HTML file is out of sync with script.js. Please hard refresh (Cmd+Shift+R).</h1>";
+    return;
+  }
 
   let isCallActive = false;
   let recognition = null;
@@ -215,6 +225,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // This is the line that will now work, because it's inside the DOMContentLoaded
+  // This line is now safe and will not error.
   startButton.addEventListener('click', toggleCall);
 });

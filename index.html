@@ -5,47 +5,40 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pressure Shield</title>
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
     <header class="header">
-        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shield-icon">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+        <svg class="shield-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+            stroke="currentColor" width="28" height="28">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.604-3.749A11.95 11.95 0 0018 6c-.63 0-1.253.074-1.844.214" />
         </svg>
         <h1>Pressure Shield</h1>
     </header>
 
-    <main class="main-content">
-        <button id="startButton" class="start-button">
-            Start Call Analysis
-        </button>
+    <div class="main-content" id="main-content">
+        <div class="controls" id="controls">
+            <button id="start-btn">Start Call Analysis</button>
+        </div>
 
-        <div id="call-container" class="call-container">
-
-            <div class="log-container" id="transcript-container">
+        <div class="container" id="container">
+            <div class="log-box">
                 <h2>Live Transcript</h2>
-                <div class="log-box" id="transcript-log">
+                <div class="log" id="transcript-log">
                     <p class="log-entry system">Waiting for call to start...</p>
                 </div>
             </div>
-
-            <div class="log-container" id="alerts-container">
+            <div class="log-box">
                 <h2>Pressure Shield Alerts</h2>
-                <div class="log-box" id="alerts-log">
+                <div class="log" id="alert-log">
                     <p class="log-entry system">Alerts will appear here.</p>
                 </div>
             </div>
-
         </div>
-    </main>
-
+    </div>
 
     <script src="script.js"></script>
 </body>
