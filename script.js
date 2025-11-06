@@ -9,14 +9,16 @@ let detectedPhrases = new Set();
 let isCallActive = false;
 let recognition;
 
-
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-if (!SpeechRecognition) {
-    startButton.disabled = true;
-    startButton.textContent = 'Speech Recognition Not Supported';
-    transcriptLog.innerHTML = '<p class="log-entry system error">Error: Speech Recognition is not supported by this browser. Please use Chrome, Edge, or Safari.</p>';
-} else {
+function setupSpeechRecognition() {
+    if (!SpeechRecognition) {
+        transcriptLog.innerHTML = '<p class="log-entry system error">Error: Speech Recognition is not supported by this browser. Please use Chrome, Edge, or Safari.</p>';
+        startButton.disabled = true;
+        startButton.textContent = 'Speech Recognition Not Supported';
+        return false;
+    }
+    
     recognition = new SpeechRecognition();
     recognition.interimResults = true;
     recognition.continuous = true;
@@ -36,7 +38,11 @@ if (!SpeechRecognition) {
 
     recognition.onend = () => {
         if (isCallActive) {
-            recognition.start();
+            try {
+                recognition.start();
+            } catch(e) {
+                console.error("Error restarting recognition:", e);
+            }
         }
     };
 
@@ -53,7 +59,7 @@ if (!SpeechRecognition) {
         } else if (event.error === 'aborted') {
             errorMessage = 'Speech recognition was aborted.';
         } else if (event.error === 'no-speech') {
-            console.warn('Speech recognition: no-speech error. Restarting.');
+            console.warn('Speech recognition: no-speech error.');
             return;
         } else {
             errorMessage = `An unexpected error occurred: "${event.error}". Please try again.`;
@@ -61,8 +67,8 @@ if (!SpeechRecognition) {
         
         transcriptLog.innerHTML = `<p class="log-entry system error">${errorMessage}</p>`;
     };
-
-    startButton.addEventListener('click', toggleCall);
+    
+    return true;
 }
 
 function toggleCall() {
@@ -76,6 +82,16 @@ function toggleCall() {
         alertsLog.innerHTML = '<p class="log-entry system">Alerts will appear here.</p>';
 
         detectedPhrases.clear();
+        
+        if (!recognition) {
+            if (!setupSpeechRecognition()) {
+                isCallActive = false;
+                startButton.textContent = 'Start Call Analysis';
+                callContainer.style.display = 'none';
+                return;
+            }
+        }
+        
         startCall();
 
     } else {
@@ -170,4 +186,10 @@ function addAlert(type, title, message) {
     
     alertsLog.appendChild(alertCard);
     alertsLog.scrollTop = alertsLog.scrollHeight;
+}
+
+if (startButton) {
+    startButton.addEventListener('click', toggleCall);
+} else {
+    console.error('Fatal Error: startButton not found.');
 }
