@@ -1,5 +1,28 @@
 document.addEventListener('DOMContentLoaded', () => {
 
+    if (typeof deepgram === 'undefined') {
+        console.error("Deepgram SDK failed to load. This is likely a cache issue.");
+        
+        const errorContainer = document.getElementById('call-container');
+        if (errorContainer) {
+            errorContainer.innerHTML = `<p class="log-entry system error">
+                <strong>CRITICAL ERROR: Deepgram SDK failed to load.</strong>
+                <br><br>
+                Your browser is likely using a cached, old version of the HTML file.
+                <br><br>
+                <strong>Please perform a "Hard Refresh":</strong>
+                <br>
+                - Windows/Linux: <strong>Ctrl+Shift+R</strong>
+                <br>
+                - Mac: <strong>Cmd+Shift+R</strong>
+            </p>`;
+            errorContainer.style.display = 'grid';
+        }
+        return; 
+    }
+
+    const { createClient } = deepgram;
+
     const startButton = document.getElementById('startButton');
     const callContainer = document.getElementById('call-container');
     const transcriptLog = document.getElementById('transcript-log');
@@ -9,12 +32,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let mediaRecorder;
     let deepgramSocket;
 
-    const { createClient } = deepgram;
-
     startButton.addEventListener('click', toggleCall);
 
     function toggleCall() {
-        isCallActive = !isCallActive;
+        isCallActive = !isCallTrue;
 
         if (isCallActive) {
             startButton.textContent = 'Stop Call Analysis';
