@@ -5,6 +5,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const transcriptLog = document.getElementById('transcript-log');
     const alertsLog = document.getElementById('alerts-log');
 
+    const pressureRegex = /(act now|limited time|only one left|don't wait|offer expires|final notice|your account is suspended|immediate payment|must verify|bank details)/i;
+    let detectedPhrases = new Set();
+
     let isCallActive = false;
     let recognition;
 
@@ -48,8 +51,14 @@ document.addEventListener('DOMContentLoaded', () => {
             errorMessage = 'Error: Microphone permission was denied. Please allow access and try again.';
         } else if (event.error === 'network') {
             errorMessage = 'Error: A network error occurred. Please check your connection.';
+        } else if (event.error === 'audio-capture') {
+            errorMessage = 'Error: No audio was detected. Please check your microphone.';
+        } else if (event.error === 'aborted') {
+            errorMessage = 'Speech recognition was aborted.';
         }
+        
         transcriptLog.innerHTML = `<p class="log-entry system error">${errorMessage}</p>`;
+        
     };
 
     startButton.addEventListener('click', toggleCall);
@@ -64,6 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
             transcriptLog.innerHTML = '<p class="log-entry system">Connecting...</p>';
             alertsLog.innerHTML = '<p class="log-entry system">Alerts will appear here.</p>';
 
+            detectedPhrases.clear();
             startCall();
 
         } else {
@@ -85,9 +95,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Error accessing microphone:', error);
             transcriptLog.innerHTML = '<p class="log-entry system error">Error: Could not access microphone. Please grant permission and try again.</p>';
-            if (isCallActive) {
-                toggleCall();
-            }
         }
     }
 
@@ -115,6 +122,52 @@ document.addEventListener('DOMContentLoaded', () => {
         
         transcriptLog.appendChild(p);
         transcriptLog.scrollTop = transcriptLog.scrollHeight;
+
+        checkTranscriptForPressure(text);
+    }
+
+    function checkTranscriptForPressure(text) {
+        const match = text.match(pressureRegex);
+        if (match) {
+            const matchedPhrase = match[0].toLowerCase();
+            
+            if (!detectedPhrases.has(matchedPhrase)) {
+                detectedPhrases.add(matchedPhrase);
+                addAlert('yellow', 'Pressure Tactic Detected', `The phrase "${matchedPhrase}" was detected. Analyzing context...`);
+            }
+        }
+    }
+
+    function addAlert(type, title, message) {
+        const firstEntry = alertsLog.querySelector('.system');
+        if (firstEntry) {
+            alertsLog.removeChild(firstEntry);
+        }
+
+        const alertCard = document.createElement('div');
+        alertCard.className = `alert-card ${type}`;
+
+        let iconSvg = '';
+        if (type === 'yellow') {
+            iconSvg = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="alert-icon ${type}">
+                    <path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+            `;
+        }
+        
+        alertCard.innerHTML = `
+            ${iconSvg}
+            <div class="alert-content">
+                <p class="alert-title">${title}</p>
+                <p class="alert-message">${message}</p>
+            </div>
+        `;
+        
+        alertsLog.appendChild(alertCard);
+        alertsLog.scrollTop = alertsLog.scrollHeight;
     }
 
 });
