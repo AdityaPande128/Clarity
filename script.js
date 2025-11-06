@@ -8,6 +8,7 @@ let detectedPhrases = new Set();
 
 let isCallActive = false;
 let recognition;
+let interim_transcript = '';
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
@@ -25,15 +26,23 @@ function setupSpeechRecognition() {
 
     recognition.onresult = (event) => {
         let final_transcript = '';
+        interim_transcript = '';
+
         for (let i = event.resultIndex; i < event.results.length; ++i) {
+            const transcript_part = event.results[i][0].transcript;
+            
             if (event.results[i].isFinal) {
-                final_transcript += event.results[i][0].transcript.trim() + ' ';
+                final_transcript += transcript_part.trim() + ' ';
+            } else {
+                interim_transcript += transcript_part;
             }
         }
         
         if (final_transcript) {
             addTranscript(final_transcript);
         }
+        
+        updateInterimTranscript(interim_transcript);
     };
 
     recognition.onend = () => {
@@ -134,6 +143,11 @@ function addTranscript(text) {
         transcriptLog.innerHTML = '';
     }
 
+    const lastInterim = transcriptLog.querySelector('.interim');
+    if (lastInterim) {
+        lastInterim.remove();
+    }
+
     const p = document.createElement('p');
     p.className = 'log-entry transcript';
     p.textContent = text;
@@ -142,6 +156,30 @@ function addTranscript(text) {
     transcriptLog.scrollTop = transcriptLog.scrollHeight;
 
     checkTranscriptForPressure(text);
+}
+
+function updateInterimTranscript(text) {
+    if (!text) {
+        return;
+    }
+    
+    const firstEntry = transcriptLog.querySelector('.system');
+    if (firstEntry) {
+        transcriptLog.innerHTML = '';
+    }
+    
+    let interimEl = transcriptLog.querySelector('.interim');
+    
+    if (interimEl) {
+        interimEl.textContent = text;
+    } else {
+        interimEl = document.createElement('p');
+        interimEl.className = 'log-entry system interim';
+        interimEl.textContent = text;
+        transcriptLog.appendChild(interimEl);
+    }
+    
+    transcriptLog.scrollTop = transcriptLog.scrollHeight;
 }
 
 function checkTranscriptForPressure(text) {

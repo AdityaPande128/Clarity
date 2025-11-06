@@ -123,6 +123,12 @@ h1 {
     font-weight: 500;
 }
 
+.log-entry.system.interim {
+    color: var(--text-medium);
+    font-style: italic;
+    opacity: 0.8;
+}
+
 .log-entry.transcript {
     color: var(--text-light);
     word-wrap: break-word;
