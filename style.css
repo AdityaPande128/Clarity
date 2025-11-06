@@ -39,7 +39,8 @@ body {
     padding-left: 0.5rem;
 }
 
-.shield-icon {
+/* RENAMED CLASS */
+.clarity-icon {
     color: var(--primary-blue);
 }
 
@@ -158,7 +159,6 @@ h2 {
     transition: all 0.3s ease;
 }
 
-/* NEW: Generic class for RED alerts */
 .alert-card.pressure {
     border-left: 4px solid var(--red-alert);
 }
@@ -167,7 +167,6 @@ h2 {
     color: var(--red-alert);
 }
 
-/* NEW: Generic class for YELLOW alerts */
 .alert-card.jargon,
 .alert-card.multi_question {
     border-left: 4px solid var(--yellow-alert);
