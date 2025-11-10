@@ -4,8 +4,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const startButton = document.getElementById('start-btn');
   const transcriptLog = document.getElementById('transcript-log');
   const alertLog = document.getElementById('alert-log');
+  // NEW ELEMENT
+  const summaryContent = document.getElementById('summary-content');
 
-  if (!mainContent || !startButton || !transcriptLog || !alertLog) {
+  if (!mainContent || !startButton || !transcriptLog || !alertLog || !summaryContent) {
     console.error("Fatal Error: HTML elements are missing.");
     document.body.innerHTML = "<h1>Fatal Error: HTML file is out of sync with script.js. Please hard refresh (Cmd+Shift+R).</h1>";
     return;
@@ -14,8 +16,6 @@ document.addEventListener('DOMContentLoaded', () => {
   let isCallActive = false;
   let recognition = null;
   let fullTranscript = '';
-  
-  // NEW: A "memory" to prevent duplicate alerts
   let shownAlerts = new Set();
 
   function toggleCall() {
@@ -45,9 +45,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
       isCallActive = true;
       fullTranscript = '';
-      shownAlerts.clear(); // Clear the memory for the new call
+      shownAlerts.clear();
       transcriptLog.innerHTML = '';
       alertLog.innerHTML = '';
+      // NEW: Reset summary box
+      summaryContent.textContent = "Waiting for conversation to start...";
       
       mainContent.classList.add('call-active');
       startButton.textContent = 'Stop Call Analysis';
@@ -144,7 +146,6 @@ document.addEventListener('DOMContentLoaded', () => {
     transcriptLog.scrollTop = transcriptLog.scrollHeight;
   }
 
-  // UPDATED: This function now handles an array of alerts
   async function analyzeWithAI(transcript) {
     try {
       const response = await fetch('/api/analyzePressure', {
@@ -159,15 +160,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const data = await response.json();
       
+      // NEW: Update the summary
+      if (data.summary) {
+        summaryContent.textContent = data.summary;
+      }
+
       if (data.alerts && data.alerts.length > 0) {
         for (const alert of data.alerts) {
-          // Create a unique key for this alert
           const alertKey = `${alert.type}-${alert.title}`;
-          
-          // Check if we've *already* shown this alert
           if (!shownAlerts.has(alertKey)) {
             addAlert(alert);
-            shownAlerts.add(alertKey); // Add to memory
+            shownAlerts.add(alertKey);
           }
         }
       }
@@ -177,13 +180,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
   
-  // UPDATED: This function is now more generic
   function addAlert(alert) {
     const alertId = `alert-${shownAlerts.size}`;
     const alertCard = document.createElement('div');
     alertCard.id = alertId;
-    
-    // Use the alert.type to set the class (e.g., "pressure", "jargon")
     alertCard.className = `alert-card ${alert.type.toLowerCase()}`;
     
     alertCard.innerHTML = `

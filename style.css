@@ -39,7 +39,6 @@ body {
     padding-left: 0.5rem;
 }
 
-/* RENAMED CLASS */
 .clarity-icon {
     color: var(--primary-blue);
 }
@@ -113,6 +112,7 @@ button.stop:hover {
     padding: 1.5rem;
     display: flex;
     flex-direction: column;
+    max-height: 70vh;
 }
 
 h2 {
@@ -146,6 +146,29 @@ h2 {
 .log-entry.system.interim {
     color: var(--text-dark);
 }
+
+/* NEW STYLES FOR SUMMARY BOX */
+.summary-box {
+    border-top: 1px solid var(--border-color);
+    padding-top: 1rem;
+    margin-top: 1rem;
+    flex-shrink: 0;
+}
+
+.summary-box h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-medium);
+    margin-bottom: 0.5rem;
+}
+
+.summary-box p {
+    font-size: 0.9rem;
+    color: var(--text-light);
+    font-style: italic;
+}
+
+/* END NEW STYLES */
 
 .alert-card {
     background-color: var(--bg-dark-blue);
