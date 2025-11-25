@@ -188,9 +188,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await response.json();
 
       // NEW: Update the summary
-      if (data.summary) {
+      if (data.summaryChunk) {
         // We *replace* the content of the summary log
-        summaryLog.innerHTML = `<p class="log-entry transcript">${data.summary}</p>`;
+        summaryLog.innerHTML = `<p class="log-entry transcript">${data.summaryChunk}</p>`;
         summaryLog.scrollTop = summaryLog.scrollHeight;
       }
 
