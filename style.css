@@ -96,7 +96,7 @@ button.stop:hover {
 .container {
     display: none;
     width: 100%;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: 1fr 1fr;
     gap: 2rem;
 }
 
@@ -124,6 +124,7 @@ h2 {
     color: var(--text-light);
     margin-bottom: 1rem;
     flex-shrink: 0;
+    /* Prevents header from shrinking */
 }
 
 .log {
@@ -140,6 +141,7 @@ h2 {
 
 .log-entry.transcript {
     color: var(--text-light);
+    /* We use pre-wrap to respect newlines from the summary */
     white-space: pre-wrap;
 }
 
@@ -151,6 +153,8 @@ h2 {
 .log-entry.system.interim {
     color: var(--text-dark);
 }
+
+/* Removed the specific .summary-box styles, as it's now a .log-box */
 
 .alert-card {
     background-color: var(--bg-dark-blue);
