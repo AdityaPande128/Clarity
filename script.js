@@ -26,11 +26,25 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function startCall() {
+  async function startCall() {
     try {
+      // First, check if Speech Recognition is supported
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SpeechRecognition) {
         addSystemEntry("Error: Speech recognition not supported by this browser.", transcriptLog);
+        return;
+      }
+
+      // Request microphone permissions explicitly
+      addSystemEntry("Requesting microphone access...", transcriptLog);
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        // Stop the stream immediately - we just needed to request permission
+        stream.getTracks().forEach(track => track.stop());
+      } catch (permissionError) {
+        console.error("Microphone permission denied:", permissionError);
+        addSystemEntry("Error: Microphone permission denied. Please allow microphone access and try again.", transcriptLog);
         return;
       }
 
@@ -49,17 +63,17 @@ document.addEventListener('DOMContentLoaded', () => {
       alertLog.innerHTML = '';
       // NEW: Reset summary box
       summaryLog.innerHTML = '<p class="log-entry system">Waiting for conversation...</p>';
-      
+
       mainContent.classList.add('call-active');
       startButton.textContent = 'Stop Call Analysis';
       startButton.classList.add('stop');
-      
+
       addSystemEntry("Connected. Start speaking...", transcriptLog);
       recognition.start();
 
     } catch (error) {
       console.error("Error starting call:", error);
-      addSystemEntry("Error: Could not start microphone.");
+      addSystemEntry("Error: Could not start microphone. " + error.message, transcriptLog);
     }
   }
 
@@ -95,11 +109,20 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function handleRecognitionError(event) {
-    if (event.error === 'no-speech' || event.error === 'audio-capture') {
-      addSystemEntry("Did not catch that. Still listening...");
+    console.error("Speech recognition error:", event.error, event);
+
+    if (event.error === 'no-speech') {
+      addSystemEntry("No speech detected. Still listening...", transcriptLog);
+    } else if (event.error === 'audio-capture') {
+      addSystemEntry("No microphone detected. Please check your microphone and try again.", transcriptLog);
+      stopCall();
+    } else if (event.error === 'not-allowed') {
+      addSystemEntry("Microphone permission was denied. Please allow microphone access in your browser settings and try again.", transcriptLog);
+      stopCall();
+    } else if (event.error === 'network') {
+      addSystemEntry("Network error occurred. Please check your internet connection.", transcriptLog);
     } else {
-      console.error("Speech recognition error:", event.error);
-      addSystemEntry(`An unexpected error occurred: '${event.error}'`);
+      addSystemEntry(`An unexpected error occurred: '${event.error}'. Please try again.`, transcriptLog);
     }
   }
 
@@ -114,7 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (existingSystemEntry && !existingSystemEntry.classList.contains('interim')) {
       existingSystemEntry.remove();
     }
-    
+
     const entry = document.createElement('p');
     entry.className = 'log-entry system';
     entry.textContent = text;
@@ -150,7 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
       systemMessageElement.remove();
       systemMessageElement = null;
     }
-  
+
     try {
       const response = await fetch('/api/analyzePressure', {
         method: 'POST',
@@ -163,7 +186,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const data = await response.json();
-      
+
       // NEW: Update the summary
       if (data.summary) {
         // We *replace* the content of the summary log
@@ -186,44 +209,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function getHighestAlertLevel(alerts) {
-    if (alerts.some(a => a.type === 'PRESSURE')) {
-      return 'pressure'; // Red
-    }
-    if (alerts.some(a => a.type === 'JARGON')) {
-      return 'jargon'; // Yellow
-    }
-    if (alerts.some(a => a.type === 'MULTI_QUESTION')) {
-      return 'multi_question'; // Green
-    }
-    return 'neutral'; // Neutral
-  }
 
-  function addTimelineEvent(data) {
-    const alertLevel = getHighestAlertLevel(data.alerts);
-    const timestamp = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-
-    const eventElement = document.createElement('div');
-    eventElement.className = `timeline-event ${alertLevel}`; // e.g., "timeline-event pressure"
-    
-    eventElement.innerHTML = `
-      <div class="timeline-icon"></div>
-      <div class="timeline-content">
-        <div class="timestamp">${timestamp}</div>
-        <p class="summary-text">${data.summaryChunk}</p>
-      </div>
-    `;
-    
-    summaryTimeline.appendChild(eventElement);
-    summaryTimeline.scrollTop = summaryTimeline.scrollHeight;
-  }
-  
   function addAlert(alert) {
     const alertId = `alert-${shownAlerts.size}`;
     const alertCard = document.createElement('div');
     alertCard.id = alertId;
     alertCard.className = `alert-card ${alert.type.toLowerCase()}`;
-    
+
     alertCard.innerHTML = `
       <svg class="alert-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.374c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
@@ -234,7 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <p><i><strong>Suggested:</strong> "${alert.suggestion}"</i></p>
       </div>
     `;
-    
+
     alertLog.prepend(alertCard);
   }
 
