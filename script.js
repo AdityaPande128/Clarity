@@ -186,6 +186,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const data = await response.json();
+      console.log('API Response:', data); // Debug log
 
       // NEW: Update the summary
       if (data.summaryChunk) {
