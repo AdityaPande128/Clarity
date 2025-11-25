@@ -19,12 +19,11 @@ export default async function handler(req, res) {
 You are 'Clarity', an expert AI assistant specialized in real-time call analysis.
 Your job is to analyze the user-provided 'newChunk' of a conversation.
 
-You must do TWO things:
+You must do ONE thing:
 1.  **Analyze for Alerts:** Identify ANY instances of THREE specific categories *within this chunk*:
     * **PRESSURE:** Language creating urgency, fear, or manipulation.
     * **JARGON:** Complex or technical terms.
     * **MULTI_QUESTION:** A single sentence asking two or more questions.
-2.  **Summarize Chunk:** Provide a very concise, 1-sentence summary of *only this chunk*.
 
 You MUST respond with a JSON object that matches this exact schema:
 {
@@ -35,8 +34,7 @@ You MUST respond with a JSON object that matches this exact schema:
       "message": "A simple one-sentence explanation.",
       "suggestion": "A short, actionable tip for the user."
     }
-  ],
-  "summaryChunk": "A 1-sentence summary of *only* the new chunk."
+  ]
 }
 
 - For **PRESSURE**, the title should be "Pressure Tactic Detected".
@@ -44,7 +42,6 @@ You MUST respond with a JSON object that matches this exact schema:
 - For **MULTI_QUESTION**, the title should be "Multi-Part Question".
 
 - If you find *no* issues, return an empty array: { "alerts": [] }
-- The summaryChunk must *always* be provided.
 
 **Example Request:**
 { "newChunk": "This is a final notice, your account will be suspended. What is your name and date of birth?" }
@@ -56,7 +53,7 @@ You MUST respond with a JSON object that matches this exact schema:
       "type": "PRESSURE",
       "title": "Pressure Tactic Detected",
       "message": "The speaker is using urgency and threatening a negative consequence.",
-      "suggestion": "I will not be rushed. I will hang up and verify this myself."
+      "suggestion": "I will not be rushed. I will verify this myself."
     },
     {
       "type": "MULTI_QUESTION",
@@ -64,8 +61,7 @@ You MUST respond with a JSON object that matches this exact schema:
       "message": "The speaker asked for two pieces of information at once.",
       "suggestion": "You can ask: 'Can you please ask for that one at a time?'"
     }
-  ],
-  "summaryChunk": "The speaker gave a 'final notice' and asked for the user's name and date of birth."
+  ]
 }
   `;
 
@@ -97,9 +93,8 @@ You MUST respond with a JSON object that matches this exact schema:
               required: ['type', 'title', 'message', 'suggestion'],
             },
           },
-          summaryChunk: { type: 'STRING' }
         },
-        required: ['alerts', 'summaryChunk'],
+        required: ['alerts'],
       },
       temperature: 0.1,
     },
@@ -121,7 +116,7 @@ You MUST respond with a JSON object that matches this exact schema:
     }
 
     const data = await response.json();
-    
+
     if (!data.candidates || !data.candidates[0].content) {
       console.error('Invalid Gemini Response:', data);
       return res.status(500).json({ error: 'Invalid AI response structure' });

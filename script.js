@@ -4,10 +4,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const startButton = document.getElementById('start-btn');
   const transcriptLog = document.getElementById('transcript-log');
   const alertLog = document.getElementById('alert-log');
-  // NEW ELEMENT
-  const summaryLog = document.getElementById('summary-log');
 
-  if (!mainContent || !startButton || !transcriptLog || !alertLog || !summaryLog) {
+  if (!mainContent || !startButton || !transcriptLog || !alertLog) {
     console.error("Fatal Error: HTML elements are missing.");
     document.body.innerHTML = "<h1>Fatal Error: HTML file is out of sync with script.js. Please hard refresh (Cmd+Shift+R).</h1>";
     return;
@@ -61,8 +59,8 @@ document.addEventListener('DOMContentLoaded', () => {
       shownAlerts.clear();
       transcriptLog.innerHTML = '';
       alertLog.innerHTML = '';
-      // NEW: Reset summary box
-      summaryLog.innerHTML = '<p class="log-entry system">Waiting for conversation...</p>';
+      transcriptLog.innerHTML = '';
+      alertLog.innerHTML = '';
 
       mainContent.classList.add('call-active');
       startButton.textContent = 'Stop Call Analysis';
@@ -191,18 +189,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const data = await response.json();
-      console.log('API Data:', data); // Debug
-
-      // NEW: Update the summary
-      if (data.summaryChunk) {
-        console.log("Updating summaryLog with:", data.summaryChunk); // Debug
-        console.log("summaryLog element:", summaryLog); // Debug
-        // We *replace* the content of the summary log
-        summaryLog.innerHTML = `<p class="log-entry transcript">${data.summaryChunk}</p>`;
-        summaryLog.scrollTop = summaryLog.scrollHeight;
-      } else {
-        console.warn("No summaryChunk in data"); // Debug
-      }
 
       if (data.alerts && data.alerts.length > 0) {
         for (const alert of data.alerts) {
