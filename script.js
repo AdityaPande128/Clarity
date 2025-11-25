@@ -100,6 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (finalTranscript) {
+      console.log("Final transcript detected:", finalTranscript); // Debug
       addTranscript(finalTranscript);
       analyzeWithAI(finalTranscript); // We send just the new chunk
     }
@@ -169,30 +170,38 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function analyzeWithAI(newChunk) {
+    console.log("analyzeWithAI called with:", newChunk); // Debug
     if (systemMessageElement) {
       systemMessageElement.remove();
       systemMessageElement = null;
     }
 
     try {
+      console.log("Fetching API..."); // Debug
       const response = await fetch('/api/analyzePressure', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ newChunk: newChunk }),
       });
 
+      console.log("API Response Status:", response.status); // Debug
+
       if (!response.ok) {
         throw new Error('AI analysis failed');
       }
 
       const data = await response.json();
-      console.log('API Response:', data); // Debug log
+      console.log('API Data:', data); // Debug
 
       // NEW: Update the summary
       if (data.summaryChunk) {
+        console.log("Updating summaryLog with:", data.summaryChunk); // Debug
+        console.log("summaryLog element:", summaryLog); // Debug
         // We *replace* the content of the summary log
         summaryLog.innerHTML = `<p class="log-entry transcript">${data.summaryChunk}</p>`;
         summaryLog.scrollTop = summaryLog.scrollHeight;
+      } else {
+        console.warn("No summaryChunk in data"); // Debug
       }
 
       if (data.alerts && data.alerts.length > 0) {
